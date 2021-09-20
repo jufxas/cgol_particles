@@ -2,7 +2,7 @@ use sfml::graphics::{CircleShape, Shape, Color, Transformable, RectangleShape};
 use sfml::system::Vector2f; 
 use std::time::SystemTime; 
 
-const CIRCLE_SCALE_FACTOR: f32 = 20.0;  // default 40 
+const CIRCLE_SCALE_FACTOR: f32 = 40.0;  // default 40 
 const HIT_BOX_SCALE_FACTOR: f32 = 1.0;  // default 1.0    0.5 to have it fit exactly around circle 
 
 #[derive(Debug)]
