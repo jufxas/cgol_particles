@@ -8,7 +8,6 @@ use sfml::graphics::{RectangleShape, Color, Font, Text, TextStyle};
 pub enum GameStates {
     Paused, 
     On, 
-    Settings, 
 }
 pub struct Settings {
     pub dies_on_fewer_than_n_neighbors: i32,

@@ -7,7 +7,6 @@ use sfml::system::*;
 mod particle;      mod timer;      mod ui_and_settings;      mod navbar;    mod textbox; 
 use particle::*;   use timer::*;   use ui_and_settings::*;   use navbar::*; use textbox::*; 
 
-
 const WIDTH: u32 = 1200; 
 const HEIGHT: u32 = 1000;    // default 1200, 1000 
 const FRAME_RATE: u32 = 30; 
@@ -21,6 +20,7 @@ const FRAME_RATE: u32 = 30;
 struct GameHandler<'a> {
     window: RenderWindow, 
     mouse_held: bool, 
+    mouse_held_outside_of_run_game_function: bool, 
     particle_holder: Vec<Particle<'a>>, 
     counter: i32, 
     timer: Timer, 
@@ -29,10 +29,30 @@ struct GameHandler<'a> {
     settings: Settings,
     particle_gen_config: ParticleGenerationConfig, 
     text_box_sys: TextBoxSystem<'a>, 
+    show_settings_menu: bool 
 } 
 impl GameHandler<'_> {
     fn update(&mut self) {
         if self.game_state == GameStates::On { self.run_game() }
+
+        if mouse::Button::LEFT.is_pressed() {
+            if !self.mouse_held_outside_of_run_game_function {
+                if self.navbar_ui.pause_button_clicked(RenderWindow::mouse_position(&self.window)) {
+                    if self.game_state == GameStates::On {
+                        self.game_state = GameStates::Paused; 
+                    } else if self.game_state == GameStates::Paused {
+                        self.game_state = GameStates::On; 
+                    }
+                } else if self.navbar_ui.settings_button_clicked(RenderWindow::mouse_position(&self.window)) {
+                    self.show_settings_menu = !self.show_settings_menu; 
+                }
+
+                self.mouse_held_outside_of_run_game_function = true; 
+            }
+        } else {
+            self.mouse_held_outside_of_run_game_function = false; 
+        }
+
     }
     fn run_game(&mut self) {
         // insert game logic, event listeners, etc. 
@@ -372,21 +392,15 @@ impl GameHandler<'_> {
         }
 
         // navbar render 
-        if self.game_state == GameStates::Paused {
-            self.window.draw(self.navbar_ui.get_play_button_ref()  );
-        } else if self.game_state == GameStates::On {
-            let pause_button = self.navbar_ui.get_pause_button_ref(); 
-            self.window.draw(&pause_button[0]  );
-            self.window.draw(&pause_button[1]  );
-        }
-        self.window.draw(self.navbar_ui.get_settings_button_square()  );
-        self.window.draw(self.navbar_ui.get_settings_button_text()  );
+        self.navbar_ui.handle_drawing(&self.game_state, &mut self.window); // ! debating if this is a good idea because idk just doesnt seem right 
 
         // text box render 
         for i in 0..self.text_box_sys.text_box_holder.len() {
             self.window.draw(self.text_box_sys.text_box_holder[i].get_text_box_ref());
             self.window.draw(self.text_box_sys.text_box_holder[i].get_text_channel_ref());
         }
+
+        // settings render 
         
 
         self.window.display();
@@ -416,15 +430,13 @@ fn main() {
         Style::CLOSE , 
         &Default::default(),
         ), 
-        mouse_held: false, 
+        mouse_held: false, mouse_held_outside_of_run_game_function: false, 
         particle_holder: Vec::new(), 
         counter: 0, 
         timer: Timer::new(FRAME_RATE, 0), 
         navbar_ui: NavbarUI { 
-            play_button: None, 
-            pause_button: None, 
-            settings_button_square: None, 
-            settings_button_font: font, settings_button_text: None
+            play_button: None, pause_button: None, settings_button_square: None, settings_button_text: None, pause_button_hit_box: None, 
+            settings_button_font: font, 
         },
         game_state: GameStates::On, 
         settings: Settings {
@@ -449,7 +461,8 @@ fn main() {
             choose_particle_charge_from_set_list: true, 
             particle_charge_set_list: vec![0.0],  // vec![-1.0, 0.0, 1.0] nice default 
         }, 
-        text_box_sys: TextBoxSystem { font, text_box_holder: Vec::new() }
+        text_box_sys: TextBoxSystem { font, text_box_holder: Vec::new() }, 
+        show_settings_menu: false, 
     };
 
     game.on_init_game(); 

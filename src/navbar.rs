@@ -1,6 +1,7 @@
-use sfml::graphics::{RectangleShape, Color, VertexArray, PrimitiveType, Font, Text, Shape, Transformable};
-use sfml::system::Vector2f; 
+use sfml::graphics::{RectangleShape, Color, VertexArray, PrimitiveType, Font, Text, Shape, Transformable, RenderTarget, RenderWindow};
+use sfml::system::{Vector2f, Vector2i}; 
 
+use crate::ui_and_settings::*;  
 pub struct NavbarUI<'a>                        
 {
     pub play_button: Option<VertexArray>,                    
@@ -8,16 +9,16 @@ pub struct NavbarUI<'a>
     pub settings_button_square: Option<RectangleShape<'a>>, 
     pub settings_button_font: &'a Font, 
     pub settings_button_text: Option<Text<'a>>, 
+    pub pause_button_hit_box: Option<RectangleShape<'a>>, 
 }
 
 impl NavbarUI<'_> {
     pub fn get_play_button_ref(&self) -> &VertexArray { self.play_button.as_ref().unwrap()  }
     pub fn get_pause_button_ref(&self) -> &[RectangleShape; 2] { &self.pause_button.as_ref().unwrap() }
-    pub fn get_settings_button_square(&self) -> &RectangleShape { &self.settings_button_square.as_ref().unwrap() }
-    pub fn get_settings_button_text(&self) -> &Text { &self.settings_button_text.as_ref().unwrap()  }
+    pub fn get_settings_button_square_ref(&self) -> &RectangleShape { &self.settings_button_square.as_ref().unwrap() }
+    pub fn get_settings_button_text_ref(&self) -> &Text { &self.settings_button_text.as_ref().unwrap()  }
 
     pub fn build_navbar(&mut self)  {
-        // let mut settings_button_text = Text::new("SETTINGS", &self.settings_button_font.font, 10); 
         let offset = Vector2f::new(10.0, 10.0); 
         let size = 25.0;   // default 25 
 
@@ -38,9 +39,16 @@ impl NavbarUI<'_> {
         self.pause_button.as_mut().unwrap()[0].set_fill_color(Color::BLACK); 
         self.pause_button.as_mut().unwrap()[0].set_position(offset); 
         self.pause_button.as_mut().unwrap()[0].set_size(Vector2f::new(size/2.0, size*2.0));
+
         self.pause_button.as_mut().unwrap()[1].set_fill_color(Color::BLACK); 
         self.pause_button.as_mut().unwrap()[1].set_position(offset + Vector2f::new(size, 0.0) ); 
         self.pause_button.as_mut().unwrap()[1].set_size(Vector2f::new(size/2.0, size*2.0));
+
+        self.pause_button_hit_box = Some(RectangleShape::new());
+
+        self.pause_button_hit_box.as_mut().unwrap().set_position(offset);
+        self.pause_button_hit_box.as_mut().unwrap().set_size(Vector2f::new(size * 2.0, size * 2.0));   
+        self.pause_button_hit_box.as_mut().unwrap().set_fill_color(Color::TRANSPARENT);
 
 
         self.settings_button_square = Some(RectangleShape::new());
@@ -64,5 +72,22 @@ impl NavbarUI<'_> {
 
 
     }
-
+    pub fn pause_button_clicked(&self, mouse_position: Vector2i) -> bool {
+        let mouse_position = Vector2f::new(mouse_position.x as f32, mouse_position.y as f32);
+        self.pause_button_hit_box.as_ref().unwrap().global_bounds().contains(mouse_position)
+    }
+    pub fn settings_button_clicked(&self, mouse_position: Vector2i) -> bool {
+        let mouse_position = Vector2f::new(mouse_position.x as f32, mouse_position.y as f32);
+        self.settings_button_square.as_ref().unwrap().global_bounds().contains(mouse_position)
+    }
+    pub fn handle_drawing(&mut self, game_state: &GameStates, render_window: &mut RenderWindow ) {
+        if game_state == &GameStates::On {
+            render_window.draw(&self.pause_button.as_ref().unwrap()[0]);
+            render_window.draw(&self.pause_button.as_ref().unwrap()[1]);
+        } else if game_state == &GameStates::Paused {
+            render_window.draw(self.get_play_button_ref());
+        }
+        render_window.draw(self.get_settings_button_square_ref());
+        render_window.draw(self.get_settings_button_text_ref());
+    }
 }
